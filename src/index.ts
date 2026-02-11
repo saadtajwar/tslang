@@ -1,23 +1,21 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { CLIENT_RENEG_LIMIT } from 'tls';
+import { Token } from './Token';
+import { Scanner } from './Scanner';
 
-class Scanner {}
-class Token {}
-
-class Slang {
+export class Slang {
     hadError: boolean = false
-    constructor(args: string[]) {
-            if (args.length > 2) {
-                console.log("Usage: ts-node src/index.ts slang file")
-            } else if (args.length == 2 && args[1]) {
-                this.runFile(args[1])
-            } else {
-                this.runPrompt()
-            }
+    public constructor(args: string[]) {
+        if (args.length > 2) {
+            console.log("Usage: ts-node src/index.ts slang file")
+        } else if (args.length == 2 && args[1]) {
+            this.runFile(args[1])
+        } else {
+            this.runPrompt()
+        }
     }
 
-    runFile(path: string) {
+    private runFile(path: string): void {
         const data: Buffer = fs.readFileSync(path);
         this.run(data.toString())
         if (this.hadError) {
@@ -25,15 +23,15 @@ class Slang {
         }
     }
 
-    run(sourceCode: string) {
+    private run(sourceCode: string): void {
         const scanner = new Scanner(sourceCode)
-        const tokens: []Token = scanner.scanTokens()
+        const tokens: Token[] = scanner.scanTokens()
         for (const token of tokens) {
-            console.log(token)
+            console.log(token.toString())
         }
     }
 
-    runPrompt() {
+    private runPrompt(): void {
         const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
@@ -49,11 +47,11 @@ class Slang {
         });
     }
 
-    error(line: number, message: string) {
+    static error(line: number, message: string): void {
         this.report(line, "", message)
     }
 
-    report(line: number, where: string, message: string) {
+    private static report(line: number, where: string, message: string): void {
         console.log(`Line ${line}: Error ${where}: ${message}`)
     }    
 
