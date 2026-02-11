@@ -91,10 +91,81 @@ export class Scanner {
             case '\n':
                 this.line++;
                 break;
+            case "\"":  
+                this.string()
+                break
             default:
-                Slang.error(this.line, `Unsupported character: ${c}`)
-                break;
+                if (this.isDigit(c)) {
+                    this.number()
+                } else if (this.isAlpha(c)) {
+                    this.identifier()
+                } else {
+                    Slang.error(this.line, `Unsupported character: ${c}`)
+                    break;
+                }
         }
+    }
+
+    private identifier(): void {
+        while (this.isAlphaNumeric(this.peek())) {
+            this.advance()
+        }
+        
+        this.addToken(TokenType.IDENTIFIER)
+    }
+
+    private number(): void {
+        while (this.isDigit(this.peek())) {
+            this.advance()
+        }
+
+        if (this.peek() === "." && this.isDigit(this.peekNext())) {
+            this.advance()
+            while (this.isDigit(this.peek())) {
+                this.advance()
+            }            
+        }
+
+        const numValue = Number(this.source.substring(this.start, this.current))
+        this.addTokenImpl(TokenType.NUMBER, numValue)
+    }
+
+    private isAlphaNumeric(char: string) {
+        return this.isDigit(char) || this.isAlpha(char)
+    }
+
+    private isDigit(char: string): boolean {
+        return char >= "0" && char <= "9"
+    }
+
+    private isAlpha(char: string): boolean {
+        return (char >= "a" && char <= "z") || (char >= "A" && char <= "Z") || char == "_"
+    }
+
+    private string(): void {
+        while (!this.isAtEnd() && this.peek() != "\"") {
+            if (this.peek() == "\n") {
+                this.line++
+            }
+            this.advance()
+        }
+        
+        if (this.isAtEnd()) {
+            Slang.error(this.line, "Unterminated string")
+            return
+        }
+
+        this.advance()
+
+        const stringValue: string = this.source.substring(this.start + 1, this.current - 1)
+        this.addTokenImpl(TokenType.STRING, stringValue)
+    }
+
+    private peekNext(): string {
+        if (this.current + 1 >= this.source.length) {
+            return "\0"
+        }
+        return this.source.charAt(this.current + 1)
     }
 
     private peek(): string {
@@ -108,7 +179,7 @@ export class Scanner {
         this.addTokenImpl(tokenType, null)
     }
 
-    private addTokenImpl(tokenType: TokenType, literal: object): void {
+    private addTokenImpl(tokenType: TokenType, literal: Object): void {
         const text: string = this.source.substring(this.start, this.current)
         this.tokens.push(new Token(tokenType, text, literal, this.line))
     }
@@ -123,8 +194,9 @@ export class Scanner {
     }
 
     private advance(): string {
+        const current_char = this.source.charAt(this.current)
         this.current++
-        return this.source.charAt(this.current)
+        return current_char
     }
 
     private isAtEnd(): boolean {
