@@ -9,6 +9,7 @@ export class Scanner {
     private start: number
     private current: number
     private line: number
+    private readonly keywords: Map<string, TokenType>
 
     public constructor(source: string) {
         this.source = source
@@ -16,6 +17,24 @@ export class Scanner {
         this.start = 0
         this.current = 0
         this.line = 1
+        this.keywords = new Map<string, TokenType>()
+        this.keywords.set("and",   TokenType.AND);
+        this.keywords.set("class", TokenType.CLASS);
+        this.keywords.set("else",  TokenType.ELSE);
+        this.keywords.set("false", TokenType.FALSE);
+        this.keywords.set("for",   TokenType.FOR);
+        this.keywords.set("fun",   TokenType.FUN);
+        this.keywords.set("if",    TokenType.IF);
+        this.keywords.set("nil",   TokenType.NIL);
+        this.keywords.set("or",    TokenType.OR);
+        this.keywords.set("print", TokenType.PRINT);
+        this.keywords.set("return", TokenType.RETURN);
+        this.keywords.set("super", TokenType.SUPER);
+        this.keywords.set("this",  TokenType.THIS);
+        this.keywords.set("true",  TokenType.TRUE);
+        this.keywords.set("var",   TokenType.VAR);
+        this.keywords.set("while", TokenType.WHILE);
+
     }
 
     public scanTokens(): Token[] {
@@ -24,7 +43,7 @@ export class Scanner {
             this.scanToken()
         }
 
-        this.tokens.push(new Token(TokenType.EOF, "", null, line))
+        this.tokens.push(new Token(TokenType.EOF, "", null, this.line))
         return this.tokens
     }
 
@@ -110,8 +129,14 @@ export class Scanner {
         while (this.isAlphaNumeric(this.peek())) {
             this.advance()
         }
-        
-        this.addToken(TokenType.IDENTIFIER)
+
+        const identifierText = this.source.substring(this.start, this.current)
+        let identifierTokenType = this.keywords.get(identifierText)
+        if (!identifierTokenType) {
+            identifierTokenType = TokenType.IDENTIFIER
+        }
+
+        this.addToken(identifierTokenType)
     }
 
     private number(): void {
@@ -179,7 +204,7 @@ export class Scanner {
         this.addTokenImpl(tokenType, null)
     }
 
-    private addTokenImpl(tokenType: TokenType, literal: Object): void {
+    private addTokenImpl(tokenType: TokenType, literal: Object | null): void {
         const text: string = this.source.substring(this.start, this.current)
         this.tokens.push(new Token(tokenType, text, literal, this.line))
     }
