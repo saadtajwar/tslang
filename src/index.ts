@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { Token } from './Token';
-import { Scanner } from './Scanner';
+import { Token } from './lexer/Token';
+import { Scanner } from './lexer/Scanner';
 
 export class Slang {
     hadError: boolean = false
@@ -27,7 +27,7 @@ export class Slang {
         const scanner = new Scanner(sourceCode)
         const tokens: Token[] = scanner.scanTokens()
         for (const token of tokens) {
-            console.log(token.toString())
+            console.log('Token: ', token.toString())
         }
     }
 
@@ -41,7 +41,6 @@ export class Slang {
             if (!line) {
                 return
             }
-            console.log(`Line: ${line}`);
             this.run(line)
             this.hadError = false
         });

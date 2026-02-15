@@ -1,6 +1,6 @@
-import { Token } from "./Token"
-import { TokenType } from "./TokenType"
-import { Slang } from "."
+import { Token } from "../lexer/Token"
+import { TokenType } from "../lexer/TokenType"
+import { Slang } from ".."
 import { isatty } from "node:tty"
 
 export class Scanner {
