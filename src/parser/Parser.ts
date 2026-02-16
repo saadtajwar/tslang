@@ -3,8 +3,7 @@ import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Binary, Expr, Grouping, Literal, Unary } from "./Expr";
 
-class ParseError extends Error
-
+class ParseError extends Error {}
 export class Parser {
     private readonly tokens: Token[]
     private current: number
@@ -17,7 +16,7 @@ export class Parser {
     parse(): Expr | null {
         try {
             return this.expression()
-        } catch (error: ParseError) {
+        } catch (error) {
             return null
         }
     }
@@ -96,7 +95,7 @@ export class Parser {
           return new Grouping(expr);
         }
 
-        Slang.tokenError(this.peek(), "Expect expression")
+        throw this.error(this.peek(), "Expect expression")
     }
 
     private matchAny(...types: TokenType[]): boolean {
@@ -136,7 +135,12 @@ export class Parser {
 
     private consume(type: TokenType, message: string): Token | void {
         if (this.check(type)) return this.advance()
+        throw this.error(this.peek(), message)
+    }
+
+    private error(token: Token, message: string): ParseError {
         Slang.tokenError(this.peek(), message)
+        return new ParseError()
     }
 
     private synchronize(): void {

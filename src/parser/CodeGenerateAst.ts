@@ -25,6 +25,7 @@ function defineAst(
     const filePath = path.join(outputDir, `${baseName}.ts`)
     const lines: string[] = []
 
+    lines.push(`// NOTE: This file is codegened! To update the structure of the AST, update the CodeGenerateAst file"\n`)
     lines.push(`import { Token } from "../lexer/Token"\n\n`)
 
     lines.push(defineVisitor(baseName, types))

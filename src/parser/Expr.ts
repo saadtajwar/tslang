@@ -1,3 +1,4 @@
+// NOTE: This file is codegened! To update the structure of the AST, update the CodeGenerateAst file"
 import { Token } from "../lexer/Token"
 
 export interface Visitor<R> {
@@ -42,9 +43,9 @@ export class Grouping extends Expr {
 }
 
 export class Literal extends Expr {
-  value: Object | null;
+  value: Object;
 
-  constructor(value: Object | null) {
+  constructor(value: Object) {
     super();
     this.value = value;
   }
