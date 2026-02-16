@@ -1,9 +1,8 @@
-import { group } from "console";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Binary, Expr, Grouping, Literal, Unary, Visitor } from "./Expr";
 
-class AstPrinter implements Visitor<string> {
+export class AstPrinter implements Visitor<string> {
     print(expr: Expr) {
         return expr.accept(this)
     }

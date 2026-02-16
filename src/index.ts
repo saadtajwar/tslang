@@ -2,6 +2,9 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 import { Token } from './lexer/Token';
 import { Scanner } from './lexer/Scanner';
+import { TokenType } from './lexer/TokenType'
+import { Parser } from './parser/Parser';
+import { AstPrinter } from './parser/ASTPrinter';
 
 export class Slang {
     hadError: boolean = false
@@ -26,9 +29,12 @@ export class Slang {
     private run(sourceCode: string): void {
         const scanner = new Scanner(sourceCode)
         const tokens: Token[] = scanner.scanTokens()
-        for (const token of tokens) {
-            console.log('Token: ', token.toString())
-        }
+
+        const parser = new Parser(tokens)
+        const expression = parser.parse()
+        if (this.hadError || !expression) return
+
+        console.log(new AstPrinter().print(expression))
     }
 
     private runPrompt(): void {
@@ -48,6 +54,14 @@ export class Slang {
 
     static error(line: number, message: string): void {
         this.report(line, "", message)
+    }
+
+    static tokenError(token: Token, message: string): void {
+        if (token.type == TokenType.EOF) {
+            this.report(token.line, " at end", message);
+          } else {
+            this.report(token.line, " at '" + token.lexeme + "'", message);
+          }      
     }
 
     private static report(line: number, where: string, message: string): void {
