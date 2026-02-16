@@ -26,15 +26,20 @@ function defineAst(
     const lines: string[] = []
 
     lines.push(`import { Token } from "../lexer/Token"\n\n`)
-    lines.push(`export abstract class ${baseName} {}\n\n`)
+
+    lines.push(defineVisitor(baseName, types))
+    lines.push("\n")
+
+    lines.push(`export abstract class ${baseName} {\n`)
+    lines.push(`  abstract accept<R>(visitor: Visitor<R>): R;\n`)
+    lines.push(`}\n\n`)
 
     for (const type of types) {
         const [classNameRaw, fieldsRaw] = type.split(":")
-        if (!classNameRaw || !fieldsRaw) {
-            continue
-        }
+        if (!classNameRaw || !fieldsRaw) continue
+
         const className = classNameRaw.trim()
-        const fieldList = fieldsRaw.trim()
+        const fieldList = fieldsRaw.trim().split(", ").map(f => f.trim())
 
         lines.push(defineType(baseName, className, fieldList))
     }
@@ -42,40 +47,70 @@ function defineAst(
     fs.writeFileSync(filePath, lines.join(""))
 }
 
-function defineType(
+function defineVisitor(
     baseName: string,
-    className: string,
-    fieldList: string
+    types: string[]
 ): string {
     const lines: string[] = []
 
-    const fields = fieldList.split(", ").map(f => f.trim())
+    lines.push(`export interface Visitor<R> {\n`)
+
+    for (const type of types) {
+        const [classNameRaw] = type.split(":")
+        if (!classNameRaw) continue
+
+        const typeName = classNameRaw.trim()
+        const paramName = baseName.toLowerCase()
+
+        lines.push(
+            `  visit${typeName}${baseName}(${paramName}: ${typeName}): R;\n`
+        )
+    }
+
+    lines.push(`}\n`)
+
+    return lines.join("")
+}
+
+function defineType(
+    baseName: string,
+    className: string,
+    fieldList: string[]
+): string {
+    const lines: string[] = []
 
     lines.push(`export class ${className} extends ${baseName} {\n`)
 
-    for (const field of fields) {
+    for (const field of fieldList) {
         const [type, name] = field.split(" ")
-        lines.push(`\treadonly ${name}: ${type};\n`)
+        lines.push(`  ${name}: ${type};\n`)
     }
 
     lines.push(`\n`)
 
-    const constructorParams = fields
+    const constructorParams = fieldList
         .map(field => {
             const [type, name] = field.split(" ")
             return `${name}: ${type}`
         })
         .join(", ")
 
-    lines.push(`\tconstructor(${constructorParams}) {\n`)
-    lines.push(`\t\tsuper();\n`)
+    lines.push(`  constructor(${constructorParams}) {\n`)
+    lines.push(`    super();\n`)
 
-    for (const field of fields) {
+    for (const field of fieldList) {
         const [, name] = field.split(" ")
-        lines.push(`\t\tthis.${name} = ${name};\n`)
+        lines.push(`    this.${name} = ${name};\n`)
     }
 
+    lines.push(`  }\n\n`)
+
+    lines.push(`  accept<R>(visitor: Visitor<R>): R {\n`)
+    lines.push(
+        `    return visitor.visit${className}${baseName}(this);\n`
+    )
     lines.push(`  }\n`)
+
     lines.push(`}\n\n`)
 
     return lines.join("")
