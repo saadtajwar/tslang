@@ -4,11 +4,17 @@ import { Token } from './lexer/Token';
 import { Scanner } from './lexer/Scanner';
 import { TokenType } from './lexer/TokenType'
 import { Parser } from './parser/Parser';
-import { AstPrinter } from './parser/ASTPrinter';
+import { AstPrinter } from './parser/AstPrinter';
+import { RuntimeError, Interpreter } from './parser/Interpreter';
 
 export class Slang {
-    hadError: boolean = false
+    static hadError: boolean
+    static hadRuntimeError: boolean
+    private static readonly interpreter = new Interpreter()
     public constructor(args: string[]) {
+        Slang.hadError = false
+        Slang.hadRuntimeError = false
+
         if (args.length > 2) {
             console.log("Usage: ts-node src/index.ts slang file")
         } else if (args.length == 2 && args[1]) {
@@ -21,7 +27,10 @@ export class Slang {
     private runFile(path: string): void {
         const data: Buffer = fs.readFileSync(path);
         this.run(data.toString())
-        if (this.hadError) {
+        if (Slang.hadError) {
+            process.exit(1)
+        }
+        if (Slang.hadRuntimeError) {
             process.exit(1)
         }
     }
@@ -32,9 +41,9 @@ export class Slang {
 
         const parser = new Parser(tokens)
         const expression = parser.parse()
-        if (this.hadError || !expression) return
+        if (Slang.hadError || !expression) return
 
-        console.log(new AstPrinter().print(expression))
+        Slang.interpreter.interpret(expression)
     }
 
     private runPrompt(): void {
@@ -48,7 +57,7 @@ export class Slang {
                 return
             }
             this.run(line)
-            this.hadError = false
+            Slang.hadError = false
         });
     }
 
@@ -62,6 +71,11 @@ export class Slang {
           } else {
             this.report(token.line, " at '" + token.lexeme + "'", message);
           }      
+    }
+
+    static runtimeError(error: RuntimeError): void {
+        console.log(error.getMessage() + `\nline [${error.token.line}]`)
+        Slang.hadRuntimeError = true
     }
 
     private static report(line: number, where: string, message: string): void {
