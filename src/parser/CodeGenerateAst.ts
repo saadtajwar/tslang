@@ -15,6 +15,11 @@ function generate_ast(args: string[]): void {
         "Literal  : Object|null value",
         "Unary    : Token operator, Expr right"
     ])
+
+    defineAst(outputDir, "Stmt", [
+        "Expression   : Expr expression",
+        "Print        : Expr expression"
+    ])
 }
 
 function defineAst(

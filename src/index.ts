@@ -4,8 +4,9 @@ import { Token } from './lexer/Token';
 import { Scanner } from './lexer/Scanner';
 import { TokenType } from './lexer/TokenType'
 import { Parser } from './parser/Parser';
-import { AstPrinter } from './parser/AstPrinter';
+// import { AstPrinter } from './parser/AstPrinter';
 import { RuntimeError, Interpreter } from './parser/Interpreter';
+import { Stmt } from './parser/Stmt';
 
 export class Slang {
     static hadError: boolean
@@ -40,10 +41,10 @@ export class Slang {
         const tokens: Token[] = scanner.scanTokens()
 
         const parser = new Parser(tokens)
-        const expression = parser.parse()
-        if (Slang.hadError || !expression) return
+        const statements: Stmt[] = parser.parse()
+        if (Slang.hadError || !statements) return
 
-        Slang.interpreter.interpret(expression)
+        Slang.interpreter.interpret(statements)
     }
 
     private runPrompt(): void {

@@ -2,6 +2,7 @@ import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Binary, Expr, Grouping, Literal, Unary } from "./Expr";
+import { Expression, Print, Stmt } from "./Stmt";
 
 class ParseError extends Error {}
 export class Parser {
@@ -13,12 +14,33 @@ export class Parser {
         this.current = 0
     }
 
-    parse(): Expr | null {
-        try {
-            return this.expression()
-        } catch (error) {
-            return null
+    parse(): Stmt[] {
+        const statements: Stmt[] = []
+        while (!this.isAtEnd()) {
+            statements.push(this.statement())
         }
+
+        return statements
+    }
+
+    private statement(): Stmt {
+        if (this.matchAny(TokenType.PRINT)) {
+            return this.printStatement()
+        }
+
+        return this.expressionStatement()
+    }
+
+    private printStatement(): Stmt {
+        const value = this.expression()
+        this.consume(TokenType.SEMICOLON, "Expect ';' after value")
+        return new Print(value)
+    }
+
+    private expressionStatement(): Stmt {
+        const value = this.expression()
+        this.consume(TokenType.SEMICOLON, "Expect ';' after value")
+        return new Expression(value)
     }
 
     private expression(): Expr {

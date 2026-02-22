@@ -1,12 +1,13 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor } from "./Expr";
+import { Expression, Print, Stmt, Visitor as StmtVisitor } from "./Stmt";
 
 export class RuntimeError extends Error {
     readonly token: Token
     constructor(token: Token, message: string) {
-        super()
+        super(message)
         this.token = token
     }
 
@@ -15,14 +16,27 @@ export class RuntimeError extends Error {
     }
 }
 
-export class Interpreter implements Visitor<any> {
-    public interpret(expression: Expr): void {
+export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
+    public interpret(statements: Stmt[]): void {
         try {
-            const value = this.evaluate(expression)
-            console.log(this.stringify(value))
+            for (const statement of statements) {
+                this.execute(statement)
+            }
         } catch (error) {
             Slang.runtimeError(error as RuntimeError)
         }
+    }
+
+    private execute(stmt: Stmt): void {
+        stmt.accept(this)
+    }
+
+    public visitExpressionStmt(stmt: Expression): void {
+        this.evaluate(stmt.expression)
+    }
+
+    public visitPrintStmt(stmt: Print): void {
+        console.log(this.stringify(this.evaluate(stmt.expression)))
     }
 
     public visitLiteralExpr(expr: Literal): any {
