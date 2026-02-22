@@ -1,7 +1,7 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Variable } from "./Expr";
+import { Assign, Binary, Expr, Grouping, Literal, Unary, Variable } from "./Expr";
 import { Expression, Print, Stmt, Var } from "./Stmt";
 
 class ParseError extends Error {}
@@ -73,7 +73,25 @@ export class Parser {
     }
 
     private expression(): Expr {
-        return this.equality()
+        return this.assignment()
+    }
+
+    private assignment(): Expr {
+        let expr = this.equality()
+
+        if (this.matchAny(TokenType.EQUAL)) {
+            const equals = this.previous()
+            const value = this.assignment()
+
+            if (expr instanceof Variable) {
+                const name = expr.name
+                return new Assign(name, value)
+            }
+
+            this.error(equals, "Invalid assignment target")
+        }
+
+        return expr
     }
 
     private equality(): Expr {

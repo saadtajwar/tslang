@@ -14,7 +14,8 @@ function generate_ast(args: string[]): void {
         "Grouping : Expr expression",
         "Literal  : Object|null value",
         "Unary    : Token operator, Expr right",
-        "Variable : Token name"
+        "Variable : Token name",
+        "Assign   : Token name, Expr value"
     ])
 
     defineAst(outputDir, "Stmt", [

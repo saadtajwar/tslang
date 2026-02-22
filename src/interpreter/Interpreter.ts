@@ -1,7 +1,7 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable } from "../parser/Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign } from "../parser/Expr";
 import { Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt";
 import { Environment } from "./Environment";
 
@@ -32,6 +32,12 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
     private execute(stmt: Stmt): void {
         stmt.accept(this)
+    }
+
+    public visitAssignExpr(expr: Assign) {
+        const value = this.evaluate(expr.value)
+        this.environment.assign(expr.name, value)
+        return value
     }
 
     public visitVarStmt(stmt: Var): void {

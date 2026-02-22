@@ -7,6 +7,16 @@ export class Environment {
         this.values = new Map<string, object>()
     } 
 
+    assign(name: Token, value: object): void {
+        if (this.values.has(name.lexeme)) {
+            this.values.set(name.lexeme, value)
+            return
+        }
+        
+        throw new RuntimeError(name, `Undefined variable ${name.lexeme}`)
+
+    }
+
     define(name: string, value: object): void {
         this.values.set(name, value)
     }
