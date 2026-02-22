@@ -1,8 +1,9 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor } from "../parser/Expr";
-import { Expression, Print, Stmt, Visitor as StmtVisitor } from "../parser/Stmt";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable } from "../parser/Expr";
+import { Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt";
+import { Environment } from "./Environment";
 
 export class RuntimeError extends Error {
     readonly token: Token
@@ -17,6 +18,8 @@ export class RuntimeError extends Error {
 }
 
 export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
+    private environment = new Environment()
+
     public interpret(statements: Stmt[]): void {
         try {
             for (const statement of statements) {
@@ -29,6 +32,19 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
     private execute(stmt: Stmt): void {
         stmt.accept(this)
+    }
+
+    public visitVarStmt(stmt: Var): void {
+        let value = null
+        if (stmt.initializer != null) {
+            value = this.evaluate(stmt.initializer)
+        }
+
+        this.environment.define(stmt.name.lexeme, value)
+    }
+
+    public visitVariableExpr(expr: Variable) {
+        return this.environment.get(expr.name)
     }
 
     public visitExpressionStmt(stmt: Expression): void {
