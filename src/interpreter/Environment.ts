@@ -2,14 +2,26 @@ import { Token } from "../lexer/Token"
 import { RuntimeError } from "./Interpreter"
 
 export class Environment {
+    readonly enclosing: Environment
     private readonly values: Map<string, object>
-    constructor() {
+
+    constructor(enclosing?: Environment) {
         this.values = new Map<string, object>()
+        if (enclosing) {
+            this.enclosing = enclosing
+        } else {
+            this.enclosing = null as unknown as Environment
+        }
     } 
 
     assign(name: Token, value: object): void {
         if (this.values.has(name.lexeme)) {
             this.values.set(name.lexeme, value)
+            return
+        }
+
+        if (this.enclosing) {
+            this.enclosing.assign(name, value)
             return
         }
         
@@ -26,6 +38,7 @@ export class Environment {
             return this.values.get(name.lexeme) as object
         }
 
+        if (this.enclosing) return this.enclosing.get(name)
         throw new RuntimeError(name, `undefined variable ${name.lexeme}`)
     }
 }

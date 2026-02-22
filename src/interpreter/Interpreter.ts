@@ -2,7 +2,7 @@ import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign } from "../parser/Expr";
-import { Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt";
+import { Block, Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt";
 import { Environment } from "./Environment";
 
 export class RuntimeError extends Error {
@@ -32,6 +32,22 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
     private execute(stmt: Stmt): void {
         stmt.accept(this)
+    }
+
+    public visitBlockStmt(stmt: Block): void {
+        this.executeBlock(stmt.statements, new Environment(this.environment))
+    }
+
+    private executeBlock(statements: Stmt[], environment: Environment) {
+        const prev = this.environment
+        try {
+            this.environment = environment
+            for (const statement of statements) {
+                this.execute(statement)
+            }
+        } finally {
+            this.environment = prev
+        }
     }
 
     public visitAssignExpr(expr: Assign) {

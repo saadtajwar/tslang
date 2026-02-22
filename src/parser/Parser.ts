@@ -2,7 +2,7 @@ import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Assign, Binary, Expr, Grouping, Literal, Unary, Variable } from "./Expr";
-import { Expression, Print, Stmt, Var } from "./Stmt";
+import { Block, Expression, Print, Stmt, Var } from "./Stmt";
 
 class ParseError extends Error {}
 export class Parser {
@@ -57,7 +57,22 @@ export class Parser {
             return this.printStatement()
         }
 
+        if (this.matchAny(TokenType.LEFT_BRACE)) {
+            return new Block(this.block())
+        }
+
         return this.expressionStatement()
+    }
+
+    private block(): Stmt[] {
+        const statements: Stmt[] = []
+        while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+            const dec = this.declaration()
+            if (dec) statements.push(dec)
+        }
+
+        this.consume(TokenType.RIGHT_BRACE, "Expect } after block")
+        return statements
     }
 
     private printStatement(): Stmt {

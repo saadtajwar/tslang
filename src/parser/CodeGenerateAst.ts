@@ -19,6 +19,7 @@ function generate_ast(args: string[]): void {
     ])
 
     defineAst(outputDir, "Stmt", [
+        "Block        : Stmt[] statements",
         "Expression   : Expr expression",
         "Print        : Expr expression",
         "Var         :  Token name, Expr initializer"
