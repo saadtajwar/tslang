@@ -5,6 +5,7 @@ import { Expr } from "./Expr";
 export interface Visitor<R> {
   visitExpressionStmt(stmt: Expression): R;
   visitPrintStmt(stmt: Print): R;
+  visitVarStmt(stmt: Var): R;
 }
 
 export abstract class Stmt {
@@ -34,6 +35,21 @@ export class Print extends Stmt {
 
   accept<R>(visitor: Visitor<R>): R {
     return visitor.visitPrintStmt(this);
+  }
+}
+
+export class Var extends Stmt {
+  name: Token;
+  initializer: Expr;
+
+  constructor(name: Token, initializer: Expr) {
+    super();
+    this.name = name;
+    this.initializer = initializer;
+  }
+
+  accept<R>(visitor: Visitor<R>): R {
+    return visitor.visitVarStmt(this);
   }
 }
 

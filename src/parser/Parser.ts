@@ -1,8 +1,8 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary } from "./Expr";
-import { Expression, Print, Stmt } from "./Stmt";
+import { Binary, Expr, Grouping, Literal, Unary, Variable } from "./Expr";
+import { Expression, Print, Stmt, Var } from "./Stmt";
 
 class ParseError extends Error {}
 export class Parser {
@@ -17,10 +17,39 @@ export class Parser {
     parse(): Stmt[] {
         const statements: Stmt[] = []
         while (!this.isAtEnd()) {
-            statements.push(this.statement())
+            const stmt = this.declaration()
+            if (stmt) {
+                statements.push(stmt)
+            }
         }
 
         return statements
+    }
+
+    private declaration(): Stmt | null {
+        try {
+            if (this.matchAny(TokenType.VAR)) {
+                return this.varDeclaration()
+            }
+
+            return this.statement()
+        } catch (error) {
+            this.synchronize()
+            return null
+        }
+    }
+
+    private varDeclaration(): Var {
+        const name = this.consume(TokenType.IDENTIFIER, "Expect identifier after var")
+
+        // @ts-ignore
+        let initializer: Expr = null
+        if (this.matchAny(TokenType.EQUAL)) {
+            initializer = this.expression()
+        }
+
+        this.consume(TokenType.SEMICOLON, "Expect ';' after value")
+        return new Var(name, initializer)
     }
 
     private statement(): Stmt {
@@ -110,6 +139,10 @@ export class Parser {
         if (this.matchAny(TokenType.NUMBER, TokenType.STRING)) {
           return new Literal(this.previous().literal);
         }
+
+        if (this.matchAny(TokenType.IDENTIFIER)) {
+            return new Variable(this.previous())
+        }
     
         if (this.matchAny(TokenType.LEFT_PAREN)) {
           const expr = this.expression();
@@ -155,7 +188,7 @@ export class Parser {
         return this.tokens[this.current - 1]
     }
 
-    private consume(type: TokenType, message: string): Token | void {
+    private consume(type: TokenType, message: string): Token {
         if (this.check(type)) return this.advance()
         throw this.error(this.peek(), message)
     }

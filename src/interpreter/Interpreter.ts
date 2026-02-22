@@ -1,8 +1,8 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor } from "./Expr";
-import { Expression, Print, Stmt, Visitor as StmtVisitor } from "./Stmt";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor } from "../parser/Expr";
+import { Expression, Print, Stmt, Visitor as StmtVisitor } from "../parser/Stmt";
 
 export class RuntimeError extends Error {
     readonly token: Token

@@ -5,7 +5,7 @@ import { Scanner } from './lexer/Scanner';
 import { TokenType } from './lexer/TokenType'
 import { Parser } from './parser/Parser';
 // import { AstPrinter } from './parser/AstPrinter';
-import { RuntimeError, Interpreter } from './parser/Interpreter';
+import { RuntimeError, Interpreter } from './interpreter/Interpreter';
 import { Stmt } from './parser/Stmt';
 
 export class Slang {
