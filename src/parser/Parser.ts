@@ -1,8 +1,8 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Assign, Binary, Expr, Grouping, Literal, Unary, Variable } from "./Expr";
-import { Block, Expression, Print, Stmt, Var } from "./Stmt";
+import { Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
+import { Block, Expression, If, Print, Stmt, Var, While } from "./Stmt";
 
 class ParseError extends Error {}
 export class Parser {
@@ -53,6 +53,14 @@ export class Parser {
     }
 
     private statement(): Stmt {
+        if (this.matchAny(TokenType.IF)) {
+            return this.ifStatement()
+        }
+
+        if (this.matchAny(TokenType.WHILE)) {
+            return this.whileStatement()
+        }
+
         if (this.matchAny(TokenType.PRINT)) {
             return this.printStatement()
         }
@@ -62,6 +70,30 @@ export class Parser {
         }
 
         return this.expressionStatement()
+    }
+
+    private whileStatement(): Stmt {
+        this.consume(TokenType.LEFT_PAREN, "Expect ( after if")
+        const condition = this.expression()
+        this.consume(TokenType.RIGHT_PAREN, "Expect ) after condition")
+        
+        const body = this.statement()
+
+        return new While(condition, body)
+    }
+
+    private ifStatement(): Stmt {
+        this.consume(TokenType.LEFT_PAREN, "Expect ( after if")
+        const condition = this.expression()
+        this.consume(TokenType.RIGHT_PAREN, "Expect ) after condition")
+
+        const thenBranch = this.statement()
+        let elseBranch = null
+        if (this.matchAny(TokenType.ELSE)) {
+            elseBranch = this.statement()
+        }
+
+        return new If(condition, thenBranch, elseBranch as Stmt)
     }
 
     private block(): Stmt[] {
@@ -92,7 +124,7 @@ export class Parser {
     }
 
     private assignment(): Expr {
-        let expr = this.equality()
+        let expr = this.or()
 
         if (this.matchAny(TokenType.EQUAL)) {
             const equals = this.previous()
@@ -104,6 +136,29 @@ export class Parser {
             }
 
             this.error(equals, "Invalid assignment target")
+        }
+
+        return expr
+    }
+
+    private or(): Expr {
+        let expr = this.and()
+
+        while (this.matchAny(TokenType.OR)) {
+            const operator = this.previous()
+            const right = this.and()
+            expr = new Logical(expr, operator, right)
+        }
+
+        return expr
+    }
+
+    private and(): Expr {
+        let expr = this.equality()
+        while (this.matchAny(TokenType.AND)) {
+            const operator = this.previous()
+            const right = this.equality()
+            expr = new Logical(expr, operator, right)
         }
 
         return expr

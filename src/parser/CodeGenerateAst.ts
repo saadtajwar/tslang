@@ -15,14 +15,17 @@ function generate_ast(args: string[]): void {
         "Literal  : Object|null value",
         "Unary    : Token operator, Expr right",
         "Variable : Token name",
-        "Assign   : Token name, Expr value"
+        "Assign   : Token name, Expr value",
+        "Logical  : Expr left, Token operator, Expr right"
     ])
 
     defineAst(outputDir, "Stmt", [
         "Block        : Stmt[] statements",
         "Expression   : Expr expression",
+        "If           : Expr condition, Stmt thenBranch, Stmt elseBranch",
         "Print        : Expr expression",
-        "Var         :  Token name, Expr initializer"
+        "Var         :  Token name, Expr initializer",
+        "While         : Expr condition, Stmt body"
     ])
 }
 

@@ -1,8 +1,8 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign } from "../parser/Expr";
-import { Block, Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical } from "../parser/Expr";
+import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "../parser/Stmt";
 import { Environment } from "./Environment";
 
 export class RuntimeError extends Error {
@@ -32,6 +32,31 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
     private execute(stmt: Stmt): void {
         stmt.accept(this)
+    }
+
+    public visitWhileStmt(stmt: While): void {
+        while (this.isTruthy(this.evaluate(stmt.condition))) {
+            this.execute(stmt.body)
+        }
+    }
+
+    public visitLogicalExpr(expr: Logical): any {
+        const left = this.evaluate(expr.left)
+        if (expr.operator.type == TokenType.OR) {
+            if (this.isTruthy(left)) return left
+        } else {
+            if (!this.isTruthy(left)) return left
+        }
+
+        return this.evaluate(expr.right)
+    }
+
+    public visitIfStmt(stmt: If): void {
+        if (this.isTruthy(this.evaluate(stmt.condition))) {
+            this.execute(stmt.thenBranch)
+        } else if (stmt.elseBranch != null) {
+            this.execute(stmt.elseBranch)
+        }
     }
 
     public visitBlockStmt(stmt: Block): void {
