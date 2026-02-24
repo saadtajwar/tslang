@@ -57,6 +57,10 @@ export class Parser {
             return this.ifStatement()
         }
 
+        if (this.matchAny(TokenType.FOR)) {
+            return this.forStatement()
+        }
+
         if (this.matchAny(TokenType.WHILE)) {
             return this.whileStatement()
         }
@@ -72,8 +76,48 @@ export class Parser {
         return this.expressionStatement()
     }
 
+    private forStatement(): Stmt {
+        this.consume(TokenType.LEFT_PAREN, "Expect ( after for")
+        let initializer = null
+        if (this.matchAny(TokenType.VAR)) {
+            initializer = this.varDeclaration()
+        } else {
+            initializer = this.expressionStatement()
+        }
+
+        let condition = null
+        if (!this.check(TokenType.SEMICOLON)) {
+            condition = this.expression()
+        }
+        this.consume(TokenType.SEMICOLON, "Expect ; after loop condition")
+
+        let increment = null
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+            increment = this.expression()
+        }
+        this.consume(TokenType.RIGHT_PAREN, "Expect ) after for clauses")
+
+        let body = this.statement()
+
+        if (increment) {
+            body = new Block(
+                [
+                    body,
+                    new Expression(increment)
+                ]
+            )
+        }
+
+        if (!condition) condition = new Literal(true)
+        body = new While(condition, body)
+
+        if (initializer) body = new Block([initializer, body])
+
+        return body
+    }
+
     private whileStatement(): Stmt {
-        this.consume(TokenType.LEFT_PAREN, "Expect ( after if")
+        this.consume(TokenType.LEFT_PAREN, "Expect ( after while")
         const condition = this.expression()
         this.consume(TokenType.RIGHT_PAREN, "Expect ) after condition")
         
