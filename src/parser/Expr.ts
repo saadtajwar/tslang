@@ -3,6 +3,7 @@ import { Token } from "../lexer/Token"
 
 export interface Visitor<R> {
   visitBinaryExpr(expr: Binary): R;
+  visitCallExpr(expr: Call): R;
   visitGroupingExpr(expr: Grouping): R;
   visitLiteralExpr(expr: Literal): R;
   visitUnaryExpr(expr: Unary): R;
@@ -29,6 +30,23 @@ export class Binary extends Expr {
 
   accept<R>(visitor: Visitor<R>): R {
     return visitor.visitBinaryExpr(this);
+  }
+}
+
+export class Call extends Expr {
+  callee: Expr;
+  paren: Token;
+  argus: Expr[];
+
+  constructor(callee: Expr, paren: Token, argus: Expr[]) {
+    super();
+    this.callee = callee;
+    this.paren = paren;
+    this.argus = argus;
+  }
+
+  accept<R>(visitor: Visitor<R>): R {
+    return visitor.visitCallExpr(this);
   }
 }
 

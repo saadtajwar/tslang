@@ -1,9 +1,11 @@
+import { time } from "node:console";
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical } from "../parser/Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "../parser/Expr";
 import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "../parser/Stmt";
 import { Environment } from "./Environment";
+import { SlangCallable } from "./SlangCallable";
 
 export class RuntimeError extends Error {
     readonly token: Token
@@ -18,7 +20,26 @@ export class RuntimeError extends Error {
 }
 
 export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
-    private environment = new Environment()
+    readonly globals = new Environment()
+    private environment = this.globals
+
+    constructor() {
+        this.globals.define("clock", {
+            name: "callable",
+            arity(): number {
+                return 0
+            },
+            call(interpreter: Interpreter, argus: object[]): object {
+                // @ts-ignore
+                return (Date.now() / 1000)
+            },
+            toString(): string {
+                return "<native fn>"
+            }
+        }
+            
+        })
+    }
 
     public interpret(statements: Stmt[]): void {
         try {
@@ -32,6 +53,25 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
     private execute(stmt: Stmt): void {
         stmt.accept(this)
+    }
+
+    public visitCallExpr(expr: Call) {
+        const callee = this.evaluate(expr.callee)
+        const argus = []
+        for (const argument of expr.argus) {
+            argus.push(this.evaluate(argument))
+        }
+
+        if (callee.name !== "callable") {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes")
+        }
+
+        const function = callee as SlangCallable
+        if (argus.length != function.arity()) {
+            throw new RuntimeError(expr.paren, `expected ` + function.arity() + `arguments but got ${arguments.length}`)
+        }
+
+        return function.call(this, argus)
     }
 
     public visitWhileStmt(stmt: While): void {

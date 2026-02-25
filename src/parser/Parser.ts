@@ -1,7 +1,7 @@
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
-import { Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
+import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
 import { Block, Expression, If, Print, Stmt, Var, While } from "./Stmt";
 
 class ParseError extends Error {}
@@ -260,7 +260,35 @@ export class Parser {
             return new Unary(operator, right)
         }
 
-        return this.primary()
+        return this.call()
+    }
+
+    private call(): Expr {
+        let expr = this.primary()
+        while (true) {
+            if (this.matchAny(TokenType.LEFT_PAREN)) {
+                expr = this.finishCall(expr)
+            } else {
+                break
+            }
+        }
+
+        return expr
+    }
+
+    private finishCall(callee: Expr): Expr {
+        const argus: Expr[] = []
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+            do {
+                if (argus.length >= 255) {
+                    this.error(this.peek(), "Cant have more than 255 args")
+                }
+                argus.push(this.expression())
+            } while (this.matchAny(TokenType.COMMA))
+        }
+
+        const paren = this.consume(TokenType.RIGHT_PAREN, "Expect ) after arguments")
+        return new Call(callee, paren, argus)
     }
 
     private primary(): Expr {
