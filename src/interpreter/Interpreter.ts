@@ -3,9 +3,10 @@ import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "../parser/Expr";
-import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "../parser/Stmt";
+import { Block, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "../parser/Stmt";
 import { Environment } from "./Environment";
 import { SlangCallable } from "./SlangCallable";
+import { SlangFunction } from "./SlangFunction";
 
 export class RuntimeError extends Error {
     readonly token: Token
@@ -36,8 +37,6 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
             toString(): string {
                 return "<native fn>"
             }
-        }
-            
         })
     }
 
@@ -55,6 +54,20 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
         stmt.accept(this)
     }
 
+    public visitReturnStmt(stmt: Return): void {
+        let value = null
+        if (stmt.value) {
+            value = this.evaluate(stmt.value)
+        }
+
+        throw new Return(value)
+    }
+
+    public visitFunctionStmt(stmt: Function): void {
+        const func = new SlangFunction(stmt)
+        this.environment.define(stmt.name.lexeme, func)
+    }
+
     public visitCallExpr(expr: Call) {
         const callee = this.evaluate(expr.callee)
         const argus = []
@@ -66,12 +79,12 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
             throw new RuntimeError(expr.paren, "Can only call functions and classes")
         }
 
-        const function = callee as SlangCallable
-        if (argus.length != function.arity()) {
-            throw new RuntimeError(expr.paren, `expected ` + function.arity() + `arguments but got ${arguments.length}`)
+        const func = callee as SlangCallable
+        if (argus.length != func.arity()) {
+            throw new RuntimeError(expr.paren, `expected ` + 'lol' + `arguments but got ${arguments.length}`)
         }
 
-        return function.call(this, argus)
+        return func.call(this, argus)
     }
 
     public visitWhileStmt(stmt: While): void {
@@ -103,7 +116,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
         this.executeBlock(stmt.statements, new Environment(this.environment))
     }
 
-    private executeBlock(statements: Stmt[], environment: Environment) {
+    public executeBlock(statements: Stmt[], environment: Environment) {
         const prev = this.environment
         try {
             this.environment = environment

@@ -2,7 +2,7 @@ import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
-import { Block, Expression, If, Print, Stmt, Var, While } from "./Stmt";
+import { Block, Expression, Function, If, Print, Return, Stmt, Var, While } from "./Stmt";
 
 class ParseError extends Error {}
 export class Parser {
@@ -28,6 +28,9 @@ export class Parser {
 
     private declaration(): Stmt | null {
         try {
+            if (this.matchAny(TokenType.FUN)) {
+                return this.function("function")
+            }
             if (this.matchAny(TokenType.VAR)) {
                 return this.varDeclaration()
             }
@@ -37,6 +40,30 @@ export class Parser {
             this.synchronize()
             return null
         }
+    }
+
+    private function(kind: string): Function {
+        const name = this.consume(TokenType.IDENTIFIER, "Expect " + kind + " name")
+        this.consume(TokenType.LEFT_PAREN, "Expect ( after " + kind + " name")
+        const params: Token[] = []
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+            do {
+                if (params.length >= 255) {
+                    this.error(this.peek(), "Cant have more than 255 params")
+                }
+
+                params.push(
+                    this.consume(TokenType.IDENTIFIER, "Expect param name")
+                )
+            } while (this.matchAny(TokenType.COMMA))
+        }
+
+        this.consume(TokenType.RIGHT_PAREN, "Expect ) after params")
+
+        this.consume(TokenType.LEFT_BRACE, "Expect { before " + kind + " body")
+        const body: Stmt[] = this.block()
+
+        return new Function(name, params, body)
     }
 
     private varDeclaration(): Var {
@@ -69,11 +96,26 @@ export class Parser {
             return this.printStatement()
         }
 
+        if (this.matchAny(TokenType.RETURN)) {
+            return this.returnStatement()
+        }
+
         if (this.matchAny(TokenType.LEFT_BRACE)) {
             return new Block(this.block())
         }
 
         return this.expressionStatement()
+    }
+
+    private returnStatement(): Stmt {
+        const keyword = this.previous()
+        let value = null
+        if (!this.check(TokenType.SEMICOLON)) {
+            value = this.expression()
+        }
+
+        this.consume(TokenType.SEMICOLON, "Expect ; after return value")
+        return new Return(keyword, value as Expr)
     }
 
     private forStatement(): Stmt {
