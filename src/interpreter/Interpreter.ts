@@ -1,9 +1,9 @@
-import { time } from "node:console";
 import { Slang } from "..";
 import { Token } from "../lexer/Token";
 import { TokenType } from "../lexer/TokenType";
 import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "../parser/Expr";
 import { Block, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "../parser/Stmt";
+import { Return as ReturnError } from "./Return";
 import { Environment } from "./Environment";
 import { SlangCallable } from "./SlangCallable";
 import { SlangFunction } from "./SlangFunction";
@@ -60,11 +60,11 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
             value = this.evaluate(stmt.value)
         }
 
-        throw new Return(value)
+        throw new ReturnError(value)
     }
 
     public visitFunctionStmt(stmt: Function): void {
-        const func = new SlangFunction(stmt)
+        const func = new SlangFunction(stmt, this.environment)
         this.environment.define(stmt.name.lexeme, func)
     }
 
