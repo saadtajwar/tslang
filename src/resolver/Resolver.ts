@@ -1,6 +1,7 @@
+import { Slang } from "..";
 import { Interpreter } from "../interpreter/Interpreter";
 import { Token } from "../lexer/Token";
-import { Expr, Visitor as ExprVisitor } from "../parser/Expr";
+import { Assign, Expr, Visitor as ExprVisitor, Variable } from "../parser/Expr";
 import { Block, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt"
 
 export class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
@@ -45,6 +46,28 @@ export class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
         for (const statement of statements) {
             statement.accept(this)
         }
+    }
+
+    public visitVariableExpr(expr: Variable): void {
+        if (this.scopeStack.length === 0 && this.scopeStack.at(-1)?.get(expr.name.lexeme) == false) {
+            Slang.error(0, "Cant read local variable in its own initializer")
+        }
+
+        this.resolveLocal(expr, expr.name)
+    }
+
+    private resolveLocal(expr: Expr, name: Token): void {
+        for (let i = this.scopeStack.length - 1; i >= 0; i--) {
+            if (this.scopeStack.at(i)?.has(name.lexeme)) {
+                this.interpreter.resolve(expr, this.scopeStack.length - 1 - i)
+                return
+            }
+        }
+    }
+
+    public visitAssignExpr(expr: Assign): void {
+        this.resolveExpr(expr.value)
+        this.resolveLocal(expr, expr.name)
     }
 
     private beginScope(): void {
