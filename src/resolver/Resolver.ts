@@ -1,8 +1,8 @@
 import { Slang } from "..";
 import { Interpreter } from "../interpreter/Interpreter";
 import { Token } from "../lexer/Token";
-import { Assign, Expr, Visitor as ExprVisitor, Variable } from "../parser/Expr";
-import { Block, Stmt, Visitor as StmtVisitor, Var } from "../parser/Stmt"
+import { Assign, Binary, Call, Expr, Visitor as ExprVisitor, Grouping, Literal, Logical, Unary, Variable } from "../parser/Expr";
+import { Block, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "../parser/Stmt"
 
 export class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     private readonly interpreter: Interpreter
@@ -63,6 +63,80 @@ export class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
                 return
             }
         }
+    }
+
+    public visitFunctionStmt(stmt: Function): void {
+        this.declare(stmt.name)
+        this.define(stmt.name)
+
+        this.resolveFunction(stmt)
+    }
+
+    private resolveFunction(fnction: Function): void {
+        this.beginScope()
+        for (const param of fnction.params) {
+            this.declare(param)
+            this.define(param)
+        }
+        this.resolveStatements(fnction.body)
+        this.endScope()
+    }
+
+    public visitExpressionStmt(stmt: Expression): void {
+        this.resolveExpr(stmt.expression)
+    }
+
+    public visitIfStmt(stmt: If): void {
+        this.resolveExpr(stmt.condition)
+        this.resolveStatements([stmt.thenBranch])
+        if (stmt.elseBranch) {
+            this.resolveStatements([stmt.elseBranch])
+        }
+    }
+
+    public visitPrintStmt(stmt: Print): void {
+        this.resolveExpr(stmt.expression)
+    }
+
+    visitReturnStmt(stmt: Return): void {
+        if (stmt.value) {
+            this.resolveExpr(stmt.value)
+        }
+    }
+
+    visitWhileStmt(stmt: While): void {
+        this.resolveExpr(stmt.condition)
+        this.resolveStatements([stmt.body])
+    }
+
+    visitBinaryExpr(expr: Binary): void {
+        this.resolveExpr(expr.left)
+        this.resolveExpr(expr.right)
+    }
+
+    visitCallExpr(expr: Call): void {
+        this.resolveExpr(expr.callee)
+
+        for (const argu of expr.argus) {
+            this.resolveExpr(argu)
+        }
+    }
+
+    visitGroupingExpr(expr: Grouping): void {
+        this.resolveExpr(expr.expression)
+    }
+
+    visitLiteralExpr(expr: Literal): void {
+        return
+    }
+
+    visitLogicalExpr(expr: Logical): void {
+        this.resolveExpr(expr.left)
+        this.resolveExpr(expr.right)
+    }
+
+    visitUnaryExpr(expr: Unary): void {
+        this.resolveExpr(expr.right)
     }
 
     public visitAssignExpr(expr: Assign): void {
