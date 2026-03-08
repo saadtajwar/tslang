@@ -12,7 +12,22 @@ export class Environment {
         } else {
             this.enclosing = null as unknown as Environment
         }
-    } 
+    }
+    
+    getAt(distance: number, name: string): object {
+        // @ts-ignore
+        return this.ancestor(distance).values.get(name)
+    }
+
+    ancestor(distance: number): Environment {
+        let environment = this
+        for (let i = 0; i < distance; i++) {
+            // @ts-ignore
+            environment = environment.enclosing
+        }
+
+        return environment
+    }
 
     assign(name: Token, value: object): void {
         if (this.values.has(name.lexeme)) {

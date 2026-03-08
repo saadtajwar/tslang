@@ -23,6 +23,7 @@ export class RuntimeError extends Error {
 export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     readonly globals = new Environment()
     private environment = this.globals
+    private readonly locals: Map<Expr, number> = new Map()
 
     constructor() {
         this.globals.define("clock", {
@@ -144,7 +145,16 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     }
 
     public visitVariableExpr(expr: Variable) {
-        return this.environment.get(expr.name)
+        return this.lookUpVariable(expr.name, expr)
+    }
+
+    private lookUpVariable(name: Token, expr: Expr) {
+        const distance = this.locals.get(expr)
+        if (distance) {
+            return this.environment.getAt(distance, name.lexeme)
+        }
+
+        return this.globals.get(name)
     }
 
     public visitExpressionStmt(stmt: Expression): void {
